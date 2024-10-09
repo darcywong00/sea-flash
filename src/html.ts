@@ -3,6 +3,7 @@
 import * as config from './config.js';
 import * as fs from 'fs'
 import * as path from 'path'
+import * as puppeteer from 'puppeteer';
 
 export class Html {
   // HTML template files
@@ -14,15 +15,18 @@ export class Html {
   // Document title
   private title: string;
 
-  // Document filename
-  private fileName: string;
+  // Document filenames
+  private fileNameHTML: string;
+  private fileNamePDF: string;
 
   // HTML string that will be written to file
-  private str: string;
+  private str: string = '';
 
   constructor(filename: string) {
     this.title = "Flash Cards";
-    this.fileName = filename;
+    this.fileNameHTML = `${filename}.htm`;
+    this.fileNamePDF = `${filename}.pdf`;
+
 
     // Header which includes title and table styling
     this.str = fs.readFileSync(this.HEADER_IN, 'utf-8');
@@ -41,7 +45,7 @@ export class Html {
    * Get the document filename
    */
   public getFilename(): string {
-    return this.fileName;
+    return this.fileNameHTML;
   }
 
   /**
@@ -131,8 +135,23 @@ export class Html {
    */
   public writeHTML() {
     this.closeDocument();
-    fs.writeFileSync('./' + this.fileName, this.str);
-    console.info(`Flashcards written to ${this.fileName}`);
+    fs.writeFileSync('./' + this.fileNameHTML, this.str);
+    console.info(`Flashcards written to ${this.fileNameHTML}`);
+  }
+
+  /**
+   * Convert HTML file to PDF
+   */
+  public async writePDF() {
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    const contentHTML = fs.readFileSync(this.fileNameHTML, 'utf8');
+    await page.setContent(contentHTML);
+    await page.pdf({
+      path: `${this.fileNamePDF}`,
+      format: 'A4'
+    });
+    await browser.close();
   }
 
   /**
